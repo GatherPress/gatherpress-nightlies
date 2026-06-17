@@ -1,0 +1,131 @@
+name: GatherPress Nightly Build
+
+on:
+  schedule:
+    # Runs at 00:00 UTC everyday
+    # - cron: '0 0 * * *'
+    # Runs every 5 minutes for testing
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Release Artifact
+    runs-on: ubuntu-latest
+    outputs:
+      commit_hash: ${{ steps.get_hash.outputs.hash }}
+      gatherpress_version: ${{ steps.get_version.outputs.version }}
+      nightly_version: ${{ steps.build_version_string.outputs.nightly_version }}
+
+    steps:
+      - name: Checkout GatherPress repository
+        uses: actions/checkout@v6
+        with:
+          repository: GatherPress/gatherpress
+          ref: refs/heads/develop
+
+      - name: Get commit hash
+        id: get_hash
+        run: echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Get GatherPress version
+        id: get_version
+        run: |
+          echo "version=$(sed -n '/Version: /p' gatherpress.php | awk '{print $3}')" >> $GITHUB_OUTPUT
+
+      - name: Build version string
+        id: build_version_string
+        run: |
+          echo "nightly_version=vnightly-${{ steps.get_version.outputs.version }}-${{ steps.get_hash.outputs.hash }}" >> $GITHUB_OUTPUT
+
+      - name: Set Nightly Version
+        run: |
+          sed -i "s/Version: .*/Version: ${{ steps.build_version_string.outputs.nightly_version }}/g" gatherpress.php
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          # Enable built-in functionality for caching and restoring dependencies, which is disabled by default.
+          # The actions/setup-node uses actions/cache under the hood.
+          # https://github.com/actions/setup-node#caching-global-packages-data
+          cache: 'npm'
+
+      - name: NPM install
+        run: npm ci
+
+      - name: Build plugin
+        # - [Incorrect version number used when creating zip archive · Issue #92 · wp-cli/dist-archive-command](https://github.com/wp-cli/dist-archive-command/issues/92)
+        run: |
+          npm run build
+          wp dist-archive . ./gatherpress.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gatherpress-plugin
+          path: ./gatherpress.zip
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "gatherpressnightlies@users.noreply.github.com"
+
+      - name: Update previous-releases.txt
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config pull.rebase true
+          git pull origin HEAD
+          printf "${{ needs.build.outputs.nightly_version }}\n" >> previous-releases.txt
+          git add previous-releases.txt
+          git commit -m "Add ${{ needs.build.outputs.nightly_version }} to previous-releases.txt"
+          git push origin HEAD
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Git Tag
+        run: |
+          git tag ${{ needs.build.outputs.nightly_version }}
+          git push origin ${{ needs.build.outputs.nightly_version }}
+
+      - name: Create Release
+        id: create_release
+        run: |
+          response=$(curl \
+            -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -d '{
+              "tag_name": "${{ needs.build.outputs.nightly_version }}",
+              "name": "GatherPress Nightly ${{ needs.build.outputs.nightly_version }}",
+              "body": "Nightly build of the GatherPress plugin created from https://github.com/GatherPress/gatherpress/commit/${{ needs.build.outputs.commit_hash }}.",
+              "draft": false,
+              "prerelease": false
+            }' \
+            https://api.github.com/repos/${{ github.repository }}/releases)
+           upload_url=$(echo "$response" | jq -r '.upload_url')
+           echo "UPLOAD_URL=$upload_url" >> $GITHUB_OUTPUT
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: gatherpress-plugin
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.UPLOAD_URL }}
+          asset_path: ./gatherpress.zip
+          asset_name: gatherpress-nightly.zip
+          asset_content_type: application/zip
