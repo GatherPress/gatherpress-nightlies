@@ -43,7 +43,7 @@ Please report it in the *main* [GatherPress/gatherpress](https://github.com/Gath
 ## Credits
 
 - Replicated from the [Gutenberg Nightlies](https://github.com/Automattic/gutenberg-nightlies) project.
-- Credits & thanks to @bph for the idea!
+- Credits & thanks to [@bph](https://github.com/bph) for the idea!
 
 <!-- markdownlint-disable-next-line MD047 -->
 [gatherpress-nightly-zip]: https://github.com/GatherPress/gatherpress-nightlies/releases/latest/download/gatherpress-nightly.zip
