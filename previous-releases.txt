@@ -16,3 +16,4 @@ vnightly-0.34.0-d2d8377
 vnightly-0.34.0-91a5f8f
 vnightly-0.34.0-c7a34f5
 vnightly-0.34.0-c7a34f5
+vnightly-0.34.0-be60b6e
