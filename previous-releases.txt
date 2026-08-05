@@ -27,3 +27,4 @@ vnightly-0.35.0-alpha.2-46e43de
 vnightly-0.35.0-beta.1-02caefd
 vnightly-0.35.0-beta.1-543ad85
 vnightly-0.35.0-beta.1-7bbfe70
+vnightly-0.35.0-beta.1-8483cf7
