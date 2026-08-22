@@ -42,3 +42,4 @@ vnightly-0.35.0-f8885bd
 vnightly-0.35.0-32efc3a
 vnightly-0.35.0-f4d0abb
 vnightly-0.35.0-4bd8493
+vnightly-0.36.0-alpha.0-8bc1eef
