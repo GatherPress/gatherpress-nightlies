@@ -78,3 +78,4 @@ vnightly-0.36.0-alpha.2-8845d73
 vnightly-0.36.0-alpha.2-6b796e0
 vnightly-0.36.0-beta.1-4a72fc2
 vnightly-0.36.0-beta.2-926d465
+vnightly-0.37.0-alpha.0-a794691
