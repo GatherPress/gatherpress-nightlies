@@ -101,3 +101,4 @@ vnightly-0.37.0-alpha.1-ff246d3
 vnightly-0.37.0-alpha.2-16a12eb
 vnightly-0.37.0-alpha.2-26df151
 vnightly-0.37.0-beta.1-a822a20
+vnightly-0.37.0-beta.1-fbd4be1
